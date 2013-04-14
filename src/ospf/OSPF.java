@@ -71,7 +71,7 @@ public class OSPF {
         
     }
 
-    class Edge {
+    class Edge implements Comparable<Edge> {
 
         int status;
         double time;
@@ -117,6 +117,16 @@ public class OSPF {
                 return false;
             }
             return true;
+        }
+
+        @Override
+        public int compareTo(Edge other) {
+            int ret;
+            if(this.status==UP){
+            ret = (new Double(this.time)).compareTo(other.time);
+            }
+            else ret = Integer.MAX_VALUE;
+            return ret;
         }
         
     }
