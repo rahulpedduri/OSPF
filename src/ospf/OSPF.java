@@ -13,7 +13,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.logging.Level;
@@ -64,10 +64,14 @@ public class OSPF {
                 String vertex1 = words[0];
                 String vertex2 = words[1];
                 double time = Double.valueOf(words[2]);
+               
 
                 makeAdjList(inst, vertex1, vertex2, time);
+                
             }
 //System.out.println(inst.shortestPath(inst.findVertexByName("Education"), inst.findVertexByName("Belk")));
+             System.out.println(executeCommand(inst, "print", null));
+            
 
         } catch (FileNotFoundException ex) {
             Logger.getLogger(OSPF.class.getName()).log(Level.SEVERE, null, ex);
@@ -134,8 +138,28 @@ public class OSPF {
     }
 
     private static String printVertices(OSPF inst) {
-        
-        throw new UnsupportedOperationException("Not yet implemented");
+        StringBuilder output = new StringBuilder();
+        Collections.sort(inst.master);
+        Iterator<Vertex> i = inst.master.iterator();
+        while(i.hasNext()){
+            Vertex v = (Vertex) i.next();
+            output.append(v.name );
+            if(v.status == DOWN){
+                  output.append(" DOWN");
+            }
+            output.append("\n");
+            Iterator<Edge> ei = v.outEdges.iterator();
+            while(ei.hasNext()){
+                Edge e = ei.next();
+                output.append("     ").append(e.toVertex.name);
+                if(e.status == DOWN){
+                    output.append(" DOWN");
+                }
+                output.append("\n");
+            }
+        }
+        output.append("\n");
+        return output.toString();
     }
 
     private static String computePath(OSPF inst, String from, String to) {
