@@ -16,11 +16,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 
 /**
  *
@@ -34,6 +34,8 @@ public class OSPF {
     /*Globals*/
     private static ArrayList<Vertex> master; //This stores all the Vertex-es in the graph
     private static PriorityQueue<Vertex> heap;
+
+    
 
     /*Consructors*/
     public OSPF() {
@@ -50,6 +52,7 @@ public class OSPF {
 
         OSPF inst = new OSPF();
         master = new ArrayList<>();
+        heap = new PriorityQueue<>();
         File graphFile = new File(graphPath);
         File queriesFile = new File(queriespath);
         File outputFile = new File(outputPath);
@@ -68,12 +71,25 @@ public class OSPF {
                 double time = Double.valueOf(words[2]);
 
                 makeAdjList(vertex1, vertex2, time);
-
             }
+            graph.close();
+            master.trimToSize();
+            trimAll();
+            StringBuilder out = new StringBuilder();
+            while ((line = queries.readLine()) != null) {
+                String words[] = line.split(" ");
+                String ret = executeCommand(words[0], words);
+                out.append(ret);
+                System.out.println(ret);
+                System.gc();
+            }
+//            System.out.println(out);
 //System.out.println(shortestPath(findVertexByName("Education"), findVertexByName("Belk")));
+//            String a[]={"edgedown","Health","Education"};
+//            executeCommand("edgedown", a);
 //            System.out.println(computePath("Belk", "Education"));
-//            System.out.println(computeReach());
-            System.out.println(printVertices());
+            System.out.println(computeReach());
+            //System.out.println(printVertices());
 
 
         } catch (FileNotFoundException ex) {
@@ -90,6 +106,12 @@ public class OSPF {
             }
         }
 
+    }
+    private static void trimAll() {
+        master.trimToSize();
+        for(Vertex v : master){
+            v.outEdges.trimToSize();
+        }
     }
 
     private static String executeCommand(String command, String[] args) {
@@ -141,16 +163,16 @@ public class OSPF {
             default:
                 output = "The command given is unrecognized. /n /n";
         }
+
         return output;
     }
 
     private static String printVertices() {
         StringBuilder output = new StringBuilder();
         Collections.sort(master, new Comparator<Vertex>() {
-
             @Override
             public int compare(Vertex o1, Vertex o2) {
-               return o1.name.compareTo(o2.name);
+                return o1.name.compareTo(o2.name);
             }
         });
         Iterator<Vertex> i = master.iterator();
@@ -162,16 +184,16 @@ public class OSPF {
             }
             output.append("\n");
             Collections.sort(v.outEdges, new Comparator<Edge>() {
-
-            @Override
-            public int compare(Edge o1, Edge o2) {
-               return o1.toVertex.name.compareTo(o2.toVertex.name);
-            }
-        });
+                @Override
+                public int compare(Edge o1, Edge o2) {
+                    return o1.toVertex.name.compareTo(o2.toVertex.name);
+                }
+            });
             Iterator<Edge> ei = v.outEdges.iterator();
             while (ei.hasNext()) {
                 Edge e = ei.next();
                 output.append("     ").append(e.toVertex.name);
+                output.append(" ").append(e.time);
                 if (e.status == DOWN) {
                     output.append(" DOWN");
                 }
@@ -206,36 +228,61 @@ public class OSPF {
     }
 
     private static String setVertexUp(String name) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Vertex v = findVertexByName(name);
+        v.setStatus(UP);
+        return "";
     }
 
     private static String setVertexDown(String name) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Vertex v = findVertexByName(name);
+        v.setStatus(DOWN);
+        return "";
     }
 
     private static String setEdgeUp(String from, String to) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Vertex v1 = findVertexByName(from);
+        Vertex v2 = findVertexByName(to);
+        Edge e = v1.getEdgeByVertices(v1, v2);
+        if (e != null) {
+            v1.updateEdge(e, UP);
+        }
+        return "";
     }
 
     private static String setEdgeDown(String from, String to) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Vertex v1 = findVertexByName(from);
+        Vertex v2 = findVertexByName(to);
+        Edge e = v1.getEdgeByVertices(v1, v2);
+        if (e != null) {
+            v1.updateEdge(e, DOWN);
+        }
+        return "";
     }
 
     private static String addEdge(String from, String to, String time) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Vertex v1 = findVertexByName(from);
+        Vertex v2 = findVertexByName(to);
+        Edge e = new Edge(v1, Double.valueOf(time), v2);
+        v1.addEdge(e);
+        return "";
     }
 
     private static String deleteEdge(String from, String to) {
-        throw new UnsupportedOperationException("Not yet implemented");
+        Vertex v1 = findVertexByName(from);
+        Vertex v2 = findVertexByName(to);
+        Edge e = v1.getEdgeByVertices(v1, v2);
+        if (e != null) {
+            v1.deleteEdge(e);
+        }
+        return "";
     }
 
     private static String computeReach() {
         /*DFS algorithm to traverse through the entire graph*/
         Collections.sort(master, new Comparator<Vertex>() {
-
             @Override
             public int compare(Vertex o1, Vertex o2) {
-               return o1.name.compareTo(o2.name);
+                return o1.name.compareTo(o2.name);
             }
         });
         Iterator<Vertex> i = master.iterator();
@@ -247,14 +294,15 @@ public class OSPF {
             coll.remove(v);
             output.append(v.name);
             output.append("\n");
-            List<Vertex> l= new ArrayList(coll);
+           
+            ArrayList<Vertex> l = new ArrayList(coll);
+            l.trimToSize();
             Collections.sort(l, new Comparator<Vertex>() {
-
-            @Override
-            public int compare(Vertex o1, Vertex o2) {
-               return o1.name.compareTo(o2.name);
-            }
-        });
+                @Override
+                public int compare(Vertex o1, Vertex o2) {
+                    return o1.name.compareTo(o2.name);
+                }
+            });
             for (Vertex ob : l) {
                 output.append("  ");
                 output.append(ob.name);
@@ -267,13 +315,16 @@ public class OSPF {
     }
 
     private static void addToReachable(HashSet h, Vertex v) {
-        if (h.contains(v)) {
+
+        if (v.status == DOWN || h.contains(v)) {
             return;
-        }else{
+        } else {
             h.add(v);
         }
         for (Edge e : v.outEdges) {
-            addToReachable(h, e.toVertex);
+            if (e.status != DOWN) {
+                addToReachable(h, e.toVertex);
+            }
         }
     }
 
@@ -290,23 +341,37 @@ public class OSPF {
 
     private static Vertex findVertexByName(String name) {
         Vertex v;
-        v = new Vertex(name);
-        if (master.contains(v)) {
-            v = master.get(master.indexOf(v));
-        } else {
-            master.add(v);
+        //v = new Vertex(name);
+        for (Vertex i : master) {
+            if (i.name.equalsIgnoreCase(name)) {
+                return i;
+            }
         }
+        v = new Vertex(name);
+        master.add(v);
         return v;
+//        if (master.contains(v)) {
+//            v = master.get(master.indexOf(v));
+//        } else {
+//            master.add(v);
+//        }
+//        return v;
     }
 
-    public static ArrayList shortestPath(Vertex source, Vertex dest) {
+    private static ArrayList shortestPath(Vertex source, Vertex dest) {
         ArrayList<Vertex> path = new ArrayList<>();
-        initialize(source);
-        heap = new PriorityQueue<>(master);
-        computeAuxillary();
+//        if (source.minDistTemp != 0) {
+            initialize(source);
+            if (!heap.isEmpty()) {
+                heap.clear();
+            }
+            heap.addAll(master);
+            computeAuxillary();
+//        }
         for (Vertex v = dest; v != null; v = v.last) {
             path.add(v);
         }
+        path.trimToSize();
         /*TODO : path to be populated*/
         Collections.reverse(path);
         return path;
@@ -350,7 +415,6 @@ public class OSPF {
         source.minDistTemp = 0.0;
     }
 }
-
 class Vertex implements Comparable<Vertex> {
 
     int UP = OSPF.UP;
@@ -371,11 +435,33 @@ class Vertex implements Comparable<Vertex> {
         last = null;
     }
 
-    public void updateEdge(Edge edge) {
+    public Edge getEdgeByVertices(Vertex v1, Vertex v2) {
+
+        for (Edge e : this.outEdges) {
+            if (e.fromVertex.equals(v1) && e.toVertex.equals(v2)) {
+                return e;
+            }
+        }
+        return null;
+    }
+
+    public void updateEdge(Edge edge, int status) {
         //TODO update edges if the specified edge exists in the outEdges
         if (outEdges.contains(edge)) {
-            outEdges.remove(outEdges.indexOf(edge));
-            outEdges.add(edge);
+            Edge e = outEdges.get(outEdges.indexOf(edge));
+            e.status = status;
+        }
+    }
+
+    public void addEdge(Edge e) {
+        if (!this.outEdges.contains(e)) {
+            this.outEdges.add(e);
+        }
+    }
+
+    public void deleteEdge(Edge e) {
+        if (this.outEdges.contains(e)) {
+            this.outEdges.remove(e);
         }
     }
 
