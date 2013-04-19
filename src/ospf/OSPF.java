@@ -1,6 +1,6 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ * Name: Phani Rahul Pedduri
+ * ID: 800803441
  */
 package ospf;
 
@@ -11,6 +11,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -18,8 +19,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.PriorityQueue;
-import java.util.Set;
-import java.util.Stack;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,10 +44,10 @@ public class OSPF {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        
-        String graphPath = "c:\\app\\network.txt";
-        String queriespath = "c:\\app\\queries.txt";
-        String outputPath = "c:\\app\\output.txt";
+
+        String graphPath = args[0];
+        String queriespath = args[1];
+        String outputPath = args[2];
 
         OSPF inst = new OSPF();
         master = new ArrayList<>();
@@ -71,13 +70,16 @@ public class OSPF {
                 double time = Double.valueOf(words[2]);
 
                 makeAdjList(vertex1, vertex2, time);
-            }           
+            }
             trimAll();
-            
+
             while ((line = queries.readLine()) != null) {
                 String words[] = line.split(" ");
                 if (!quit) {
                     executeCommand(words[0], words, output);
+                }
+                else{
+                    break;
                 }
 
             }
@@ -97,7 +99,8 @@ public class OSPF {
         }
 
     }
-
+    
+    /*Since we are using a dynamic array, if we trim the array, the space complexity is good*/
     private static void trimAll() {
         master.trimToSize();
         for (Vertex v : master) {
@@ -105,6 +108,7 @@ public class OSPF {
         }
     }
 
+    /*This method executes a specific query*/
     private static void executeCommand(String command, String[] args, BufferedWriter w)
             throws IOException {
 
@@ -155,11 +159,13 @@ public class OSPF {
             case "quit":
             case "Quit":
                 quit = true;
+                break;
             default:
 
         }
     }
-
+    
+    /*Prints all the vertices and edges to the output file*/
     private static void printVertices(BufferedWriter w) throws IOException {
 
         Collections.sort(master, new Comparator<Vertex>() {
@@ -196,7 +202,8 @@ public class OSPF {
         }
         w.append("\n");
     }
-
+    
+    /*Computes and prints a shortest path from source to destination*/
     private static void computePath(String from, String to, BufferedWriter w) throws IOException {
         Vertex fromVertex = findVertexByName(from);
         Vertex toVertex = findVertexByName(to);
@@ -204,32 +211,34 @@ public class OSPF {
 
         Vertex v = null;
         Vertex prev = null;
-        double time = 0;
+        double time = toVertex.minDistTemp;
         while (i.hasNext()) {
             prev = v;
             v = i.next();
             w.append(v.name);
-            w.append(" ");
-            if (prev != null) {
-                double res = prev.getEdgeTime(prev, v);
-                time = res + time;
-            }
+            w.append(" ");            
         }
-        w.append(time + "");
+        /*decimal formatting is done so that round up until 2 decimal points is done.
+         Otherwise 0.9 is displayed as 0.899999999999 which is mistaken for wrong result*/
+        DecimalFormat f = new DecimalFormat("0.00");
+        w.append(f.format(time));
         w.append("\n \n");
     }
-
+    
+    /*sets the status of vertex as UP*/
     private static String setVertexUp(String name) {
         Vertex v = findVertexByName(name);
         v.setStatus(UP);
         return "";
     }
-
+    
+    /*sets the status of vertex as DOWN*/
     private static String setVertexDown(String name) {
         Vertex v = findVertexByName(name);
         v.setStatus(DOWN);
         return "";
     }
+    /*sets the status of a directed edge as UP*/
 
     private static String setEdgeUp(String from, String to) {
         Vertex v1 = findVertexByName(from);
@@ -240,6 +249,7 @@ public class OSPF {
         }
         return "";
     }
+    /*sets the status of a directed edge as DOWN*/
 
     private static String setEdgeDown(String from, String to) {
         Vertex v1 = findVertexByName(from);
@@ -250,6 +260,7 @@ public class OSPF {
         }
         return "";
     }
+    /*adds a directed edge between two vertices and creates the vertices if they dont exist*/
 
     private static String addEdge(String from, String to, String time) {
         Vertex v1 = findVertexByName(from);
@@ -258,6 +269,7 @@ public class OSPF {
         v1.addEdge(e);
         return "";
     }
+    /*deletes a directed edge from the graph*/
 
     private static String deleteEdge(String from, String to) {
         Vertex v1 = findVertexByName(from);
@@ -268,6 +280,7 @@ public class OSPF {
         }
         return "";
     }
+    /*computes and prints the reachable vertices from any given vertex*/
 
     private static void computeReach(BufferedWriter w) throws IOException {
         /* algorithm to traverse through the entire graph It traverses through
@@ -307,6 +320,7 @@ public class OSPF {
         }
         w.append("\n");
     }
+    /*to compute the reachability of a vertex*/
 
     private static void addToReachable(HashSet h, Vertex v) {
 
@@ -321,6 +335,7 @@ public class OSPF {
             }
         }
     }
+    /*makes the adjacency list, the list is a global "master" */
 
     private static void makeAdjList(String vertex1, String vertex2, double time) {
 
@@ -332,6 +347,7 @@ public class OSPF {
         Edge e2 = new Edge(v2, time, v1);
         v2.outEdges.add(e2);
     }
+    /*finds a vertex by its name and creates a new vertex if it doesn't find one*/
 
     private static Vertex findVertexByName(String name) {
         Vertex v;
@@ -344,6 +360,7 @@ public class OSPF {
         master.add(v);
         return v;
     }
+    /*Computes the shortest path using dijkstra's algorithm and returns the arraylist of it*/
 
     private static ArrayList shortestPath(Vertex source, Vertex dest) {
 
@@ -362,6 +379,7 @@ public class OSPF {
         Collections.reverse(path);
         return path;
     }
+    /*computes the auxillary array, which is crucial in dijkstra's algorithm*/
 
     private static void computeAuxillary() {
 
@@ -377,6 +395,7 @@ public class OSPF {
             }
         }
     }
+    /*relaxes the nodes, part of dijkstra's algorithm*/
 
     private static void relaxNodes(Vertex now, Vertex next) {
 
@@ -392,6 +411,7 @@ public class OSPF {
             }
         }
     }
+    /*initializes for dijkstra's algorithm*/
 
     private static void initialize(Vertex source) {
 
@@ -402,6 +422,7 @@ public class OSPF {
         source.minDistTemp = 0.0;
     }
 }
+/*Vertex data structure to hold all the data of a vertex*/
 
 class Vertex implements Comparable<Vertex> {
 
@@ -441,6 +462,10 @@ class Vertex implements Comparable<Vertex> {
 
     public void addEdge(Edge e) {
         if (!this.outEdges.contains(e)) {
+            this.outEdges.add(e);
+        }
+        else{
+            this.outEdges.remove(e);
             this.outEdges.add(e);
         }
     }
@@ -504,6 +529,7 @@ class Vertex implements Comparable<Vertex> {
         return "Vertex{" + "name=" + name + '}';
     }
 }
+/*Edge data structure to hold the info of an edge*/
 
 class Edge implements Comparable<Edge> {
 
